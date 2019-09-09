@@ -23,9 +23,12 @@ ftp -V -M -o "${statsFile}" "${source}"
 
 # IP addresses allocated to China (CN).
 # IPv4 address allocations.
+# The 5th column indicates the number of hosts.
+# Calclulate the routing prefix by 32 minus the number of host identifier bits.
 awk -F '|' '/CN\|ipv4/{ print $4 "/" (32 - log($5) / log(2)) }' "${statsFile}" \
   >> "${tableFile}"
 # IPv6 address allocations.
+# The 5th column indicates the CIDR prefix length.
 awk -F '|' '/CN\|ipv6/{ print $4 "/" $5 }' "${statsFile}" >> "${tableFile}"
 
 doas /bin/mv "${tableFile}" "${pfTableFile}"
