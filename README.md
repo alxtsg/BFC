@@ -2,10 +2,10 @@
 
 ## Description ##
 
-BFC (Block From Countries) uses Packet Filter (PF) to block network traffic from
-specific countries. Written for use on OpenBSD.
+Uses Packet Filter (PF) to accept or block traffic from specific countries.
+Written for use on OpenBSD.
 
-BFC uses data from APNIC. Currently blocks traffic from China.
+Data from APNIC is being used to generate the IP address collections.
 
 ## Installation ##
 
@@ -14,22 +14,42 @@ BFC uses data from APNIC. Currently blocks traffic from China.
 2. Update `/etc/pf.conf`.
 3. Update crontab to update the data file periodically.
 
+## Configuration ##
+
+The `whitelist.txt` file contains IP addresses that traffic from those hosts
+are accepted. 1 network block per line. By default, the following network blocks
+are whitelisted:
+
+* `10.0.0.0/8`
+* `172.16.0.0/12`
+* `192.168.0.0/16`
+* `fc00::/7`
+
 ## Usage ##
 
-BFC copies the processed data file to /etc directory and reload the ruleset
-using `pfctl(8)`, which both require root privileges.
+BFC copies the processed data files to `/etc` directory and reload the ruleset
+using `pfctl(8)`.
 
 Assume BFC is installed at `/home/joe/bfc` and run as the user joe, update
 `/etc/doas.conf`:
 
-    permit nopass joe as root cmd /bin/mv args /home/joe/bfc/bfc.data /etc/pf-blocked.data
+    permit nopass joe as root cmd /bin/mv args /home/joe/bfc/accepted.data /etc/pf-accepted.data
+    permit nopass joe as root cmd /bin/mv args /home/joe/bfc/blocked.data /etc/pf-blocked.data
     permit nopass joe as root cmd /sbin/pfctl args -f /etc/pf.conf
 
-Update `/etc/pf.conf` to block the traffic:
+Update `/etc/pf.conf` to load the IP addresses:
 
+    table <accepted> persist file "/etc/pf-accepted.data"
     table <blocked> persist file "/etc/pf-blocked.data"
 
-    # This line should be added early in the configuration file.
+Update `/etc/pf.conf` to accept and block traffic from the tables. For example:
+
+    # Accept incoming traffic from hosts in <accepted> table to connect to
+    # port 22, and block other hosts to connect to port 22.
+    pass in quick on egress proto tcp from <accepted> to egress port 22
+    block in quick on egress proto tcp from any to egress port 22
+
+    # Block all incoming traffic from hosts in <blocked> table:
     block in quick from <blocked> to any
 
 Update crontab to run BFC periodically:
