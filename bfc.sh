@@ -6,7 +6,7 @@
 # Strict mode.
 set -e
 set -u
-IFS='\n\t'
+IFS="$(printf '\n\t')"
 
 # See NRO website for allocation statistics from RIRs:
 # https://www.nro.net/about/rirs/statistics/
